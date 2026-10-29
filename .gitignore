@@ -26,3 +26,6 @@ venv/
 # airflow runtime
 airflow/logs/
 airflow/airflow.db
+
+.gradio/
+dump.rdb
