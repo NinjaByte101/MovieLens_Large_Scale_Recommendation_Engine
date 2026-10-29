@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5876"/>
+    </marker>
+  </defs>
+  <rect width="1600" height="900" fill="#FFFFFF"/>
+
+  <text x="40" y="44" font-size="26" font-weight="700" fill="#1B2333">Two-stage recommendation engine on MovieLens 25M</text>
+  <text x="40" y="68" font-size="15" fill="#5A6785">Retrieval finds a few hundred candidates fast; the ranker orders them carefully.</text>
+
+  <!-- ===== OFFLINE ===== -->
+  <rect x="40" y="90" width="1520" height="190" rx="14" fill="#F5F7FB" stroke="#C9D1E0"/>
+  <text x="62" y="118" font-size="15" font-weight="700" fill="#4A5876" letter-spacing="1">OFFLINE: weekly retraining (Airflow DAG)</text>
+
+  <g font-size="15" fill="#1B2333" text-anchor="middle">
+    <rect x="50"   y="135" width="170" height="90" rx="10" fill="#FFFFFF" stroke="#5B6B8C" stroke-width="1.5"/>
+    <text x="135"  y="172" font-weight="700">Clean + split</text><text x="135" y="193" font-size="13" fill="#5A6785">80/10/10 by time</text>
+
+    <rect x="240"  y="135" width="170" height="90" rx="10" fill="#FFFFFF" stroke="#5B6B8C" stroke-width="1.5"/>
+    <text x="325"  y="172" font-weight="700">Spark features</text><text x="325" y="193" font-size="13" fill="#5A6785">no future leakage</text>
+
+    <rect x="430"  y="135" width="170" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="515"  y="172" font-weight="700">Two-tower</text><text x="515" y="193" font-size="13" fill="#5A6785">user + movie vectors</text>
+
+    <rect x="620"  y="135" width="170" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="705"  y="172" font-weight="700">FAISS index</text><text x="705" y="193" font-size="13" fill="#5A6785">flat / IVF / HNSW</text>
+
+    <rect x="810"  y="135" width="170" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="895"  y="172" font-weight="700">DCN ranker</text><text x="895" y="193" font-size="13" fill="#5A6785">trained on candidates</text>
+
+    <rect x="1000" y="135" width="170" height="90" rx="10" fill="#FFF4E0" stroke="#D9902F" stroke-width="1.5"/>
+    <text x="1085" y="172" font-weight="700">Quality gate</text><text x="1085" y="193" font-size="13" fill="#5A6785">must beat baselines</text>
+
+    <rect x="1190" y="135" width="170" height="90" rx="10" fill="#FFFFFF" stroke="#5B6B8C" stroke-width="1.5"/>
+    <text x="1275" y="172" font-weight="700">ONNX export</text><text x="1275" y="193" font-size="13" fill="#5A6785">Triton model repo</text>
+
+    <rect x="1380" y="135" width="170" height="90" rx="10" fill="#FFFFFF" stroke="#5B6B8C" stroke-width="1.5"/>
+    <text x="1465" y="172" font-weight="700">Publish</text><text x="1465" y="193" font-size="13" fill="#5A6785">swap repo, clear cache</text>
+  </g>
+  <g stroke="#4A5876" stroke-width="1.8" fill="none" marker-end="url(#arrow)">
+    <path d="M220,180 H238"/><path d="M410,180 H428"/><path d="M600,180 H618"/><path d="M790,180 H808"/>
+    <path d="M980,180 H998"/><path d="M1170,180 H1188"/><path d="M1360,180 H1378"/>
+  </g>
+  <g font-size="11.5" fill="#7482A0" text-anchor="middle">
+    <text x="135"  y="250">train / val / test</text>
+    <text x="325"  y="250">user, item, history tables</text>
+    <text x="515"  y="250">embeddings (64-d)</text>
+    <text x="705"  y="250">items_*.index</text>
+    <text x="895"  y="250">ranker weights</text>
+    <text x="1085" y="250">stops a worse model</text>
+    <text x="1275" y="250">model.onnx + config</text>
+    <text x="1465" y="250">live repo + Redis flush</text>
+  </g>
+
+  <!-- ===== ONLINE ===== -->
+  <rect x="40" y="300" width="1520" height="470" rx="14" fill="#F5F7FB" stroke="#C9D1E0"/>
+  <text x="62" y="328" font-size="15" font-weight="700" fill="#4A5876" letter-spacing="1">ONLINE: one recommendation request</text>
+
+  <g font-size="15" fill="#1B2333" text-anchor="middle">
+    <rect x="50" y="420" width="180" height="90" rx="10" fill="#FFFFFF" stroke="#5B6B8C" stroke-width="1.5"/>
+    <text x="140" y="456" font-weight="700">Request</text>
+    <text x="140" y="477" font-size="13" fill="#5A6785">user_id, k</text>
+    <text x="140" y="494" font-size="13" fill="#5A6785">(+ genres or liked movies)</text>
+
+    <rect x="270" y="420" width="180" height="90" rx="10" fill="#FFF4E0" stroke="#D9902F" stroke-width="1.5"/>
+    <text x="360" y="462" font-weight="700">In Redis cache?</text>
+    <text x="360" y="483" font-size="13" fill="#5A6785">TTL 1 hour</text>
+
+    <rect x="490" y="420" width="180" height="90" rx="10" fill="#FFF4E0" stroke="#D9902F" stroke-width="1.5"/>
+    <text x="580" y="462" font-weight="700">Known user?</text>
+    <text x="580" y="483" font-size="13" fill="#5A6785">has training history</text>
+
+    <rect x="730" y="360" width="180" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="820" y="394" font-weight="700">FAISS retrieval</text>
+    <text x="820" y="415" font-size="13" fill="#5A6785">200 candidates</text>
+    <text x="820" y="432" font-size="13" fill="#5A6785">(movies not yet seen)</text>
+
+    <rect x="930" y="360" width="180" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="1020" y="394" font-weight="700">Build features</text>
+    <text x="1020" y="415" font-size="13" fill="#5A6785">retrieval score, user +</text>
+    <text x="1020" y="432" font-size="13" fill="#5A6785">movie stats, genre match</text>
+
+    <rect x="1130" y="360" width="180" height="90" rx="10" fill="#E8F0FE" stroke="#2F6FDE" stroke-width="1.5"/>
+    <text x="1220" y="394" font-weight="700">DCN ranker</text>
+    <text x="1220" y="415" font-size="13" fill="#5A6785">Triton (ONNX), with</text>
+    <text x="1220" y="432" font-size="13" fill="#5A6785">local fallback</text>
+
+    <rect x="1350" y="420" width="190" height="90" rx="10" fill="#E8F6EE" stroke="#2E9E6B" stroke-width="1.5"/>
+    <text x="1445" y="462" font-weight="700">Top-k movies</text>
+    <text x="1445" y="483" font-size="13" fill="#5A6785">titles + genres</text>
+
+    <rect x="730" y="540" width="380" height="58" rx="10" fill="#F1EAFB" stroke="#7B52C9" stroke-width="1.5"/>
+    <text x="920" y="574">Liked movies: average their vectors, search FAISS</text>
+    <rect x="730" y="608" width="380" height="58" rx="10" fill="#F1EAFB" stroke="#7B52C9" stroke-width="1.5"/>
+    <text x="920" y="642">Genres given: most-liked movies in those genres</text>
+    <rect x="730" y="676" width="380" height="58" rx="10" fill="#F1EAFB" stroke="#7B52C9" stroke-width="1.5"/>
+    <text x="920" y="710">Nothing known: most-liked movies overall</text>
+  </g>
+  <text x="730" y="530" font-size="13" font-weight="700" fill="#7B52C9">COLD START (new user, no ranker)</text>
+
+  <g stroke="#4A5876" stroke-width="1.8" fill="none" marker-end="url(#arrow)">
+    <path d="M230,465 H268"/>
+    <path d="M450,465 H488"/>
+    <path d="M670,450 H700 V405 H728"/>
+    <path d="M580,510 V569 H728"/>
+    <path d="M580,569 V637 H728"/>
+    <path d="M580,637 V705 H728"/>
+    <path d="M910,405 H928"/>
+    <path d="M1110,405 H1128"/>
+    <path d="M1310,405 H1330 V450 H1348"/>
+    <path d="M1110,569 H1330 V480 H1348"/>
+    <path d="M360,420 V345 H1445 V418"/>
+  </g>
+  <g stroke="#4A5876" stroke-width="1.8" fill="none">
+    <path d="M1110,637 H1330"/>
+    <path d="M1110,705 H1330"/>
+    <path d="M1330,569 V705"/>
+  </g>
+  <g font-size="12" fill="#4A5876">
+    <text x="452" y="486">miss</text>
+    <text x="560" y="338">hit: answer straight from Redis</text>
+    <text x="696" y="397">yes</text>
+    <text x="588" y="540">no</text>
+    <text x="1130" y="472" fill="#7482A0">result cached for the next request</text>
+  </g>
+
+  <!-- ===== RESULTS STRIP ===== -->
+  <rect x="40" y="790" width="1520" height="86" rx="14" fill="#E8F6EE" stroke="#B7DFC9"/>
+  <g font-size="14.5" fill="#1B2333">
+    <text x="62" y="822" font-weight="700">Measured on real MovieLens 25M data (offline, replayed on the held-out test period)</text>
+    <text x="62" y="846">Retrieval Recall@100: 0.237 vs popularity 0.150   |   Ranker vs retrieval order: NDCG@10 +29%, Recall@10 +32% (3,811 users)</text>
+    <text x="62" y="866" font-size="13" fill="#5A6785">Latency: p50 17.6 ms uncached, 0.18 ms from Redis. Triton path tested against a stand-in server only.</text>
+  </g>
+</svg>

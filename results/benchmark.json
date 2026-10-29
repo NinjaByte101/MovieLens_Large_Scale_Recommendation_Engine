@@ -1,0 +1,38 @@
+{
+  "uncached_ranker_path": {
+    "requests": 500,
+    "p50_ms": 17.85,
+    "p95_ms": 22.46,
+    "p99_ms": 27.39,
+    "single_thread_rps": 54
+  },
+  "cached_redis_hit": {
+    "requests": 500,
+    "p50_ms": 0.14,
+    "p95_ms": 0.18,
+    "p99_ms": 0.27,
+    "single_thread_rps": 6901
+  },
+  "cache_hit_rate_in_second_pass": 1.0,
+  "cold_popular": {
+    "requests": 500,
+    "p50_ms": 0.01,
+    "p95_ms": 0.01,
+    "p99_ms": 0.02,
+    "single_thread_rps": 140490
+  },
+  "cold_genre": {
+    "requests": 500,
+    "p50_ms": 0.13,
+    "p95_ms": 0.17,
+    "p99_ms": 0.21,
+    "single_thread_rps": 7248
+  },
+  "cold_taste_vector": {
+    "requests": 500,
+    "p50_ms": 0.18,
+    "p95_ms": 0.27,
+    "p99_ms": 0.38,
+    "single_thread_rps": 4926
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "users_evaluated": 5063,
+  "candidates_per_user": 200,
+  "candidate_recall_ceiling": 0.3033,
+  "out_of_fold_auc": 0.7031,
+  "retrieval_order": {
+    "recall@10": 0.0473,
+    "ndcg@10": 0.1102,
+    "recall@50": 0.1511,
+    "ndcg@50": 0.1248
+  },
+  "ranker_order": {
+    "recall@10": 0.0574,
+    "ndcg@10": 0.1307,
+    "recall@50": 0.1657,
+    "ndcg@50": 0.1397
+  },
+  "blended_order": {
+    "recall@10": 0.0521,
+    "ndcg@10": 0.121,
+    "recall@50": 0.1638,
+    "ndcg@50": 0.1348
+  }
+}

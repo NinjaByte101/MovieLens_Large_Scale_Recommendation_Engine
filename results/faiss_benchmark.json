@@ -1,0 +1,20 @@
+{
+  "flat": {
+    "overlap_with_exact": 1.0,
+    "p50_ms": 0.793,
+    "p95_ms": 0.905,
+    "queries_per_sec_batched": 11804
+  },
+  "ivf": {
+    "overlap_with_exact": 0.9611,
+    "p50_ms": 0.049,
+    "p95_ms": 0.065,
+    "queries_per_sec_batched": 30917
+  },
+  "hnsw": {
+    "overlap_with_exact": 0.9704,
+    "p50_ms": 0.076,
+    "p95_ms": 0.105,
+    "queries_per_sec_batched": 21748
+  }
+}
