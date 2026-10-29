@@ -1,0 +1,28 @@
+# data and trained artifacts (large, reproducible from the scripts)
+/data/
+/outputs/
+/models/
+/model_repository/
+/live/
+*.parquet
+*.npy
+*.index
+*.h5
+*.onnx
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# notebooks and editors
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+
+# airflow runtime
+airflow/logs/
+airflow/airflow.db

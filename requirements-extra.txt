@@ -1,0 +1,6 @@
+# Optional pieces. Install in a SEPARATE virtual environment from requirements.txt where noted,
+# because Airflow pins many packages that conflict with the training stack.
+gradio          # demo app (app/demo_app.py)
+tritonclient[http]   # only if you run a real Triton server
+pytest          # tests/
+# apache-airflow  # DAG in airflow/dags. Use its own venv, tested with Airflow 3.x

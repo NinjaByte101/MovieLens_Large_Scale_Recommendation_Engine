@@ -1,0 +1,16 @@
+# Core pipeline: data, features, retrieval, ranking, serving, export.
+# Tested with Python 3.12/3.13, TensorFlow 2.21, tensorflow-recommenders 0.7.x, PySpark 4.x.
+# Spark needs Java 11 or 17 on the machine.
+pandas
+pyarrow
+numpy
+scipy
+pyspark
+tensorflow
+tf-keras
+tensorflow-recommenders
+faiss-cpu
+redis
+onnx
+onnxruntime
+tf2onnx
