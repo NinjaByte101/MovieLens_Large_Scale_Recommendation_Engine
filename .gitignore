@@ -1,4 +1,4 @@
-# data and trained artifacts (large, reproducible from the scripts)
+# data and trained artifacts
 /data/
 /outputs/
 /models/
