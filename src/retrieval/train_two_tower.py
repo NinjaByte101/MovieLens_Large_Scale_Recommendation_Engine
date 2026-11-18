@@ -31,10 +31,12 @@ import tensorflow as tf
 import tensorflow_recommenders as tfrs
 
 SEED = 42
+# it controls how strongly the model focuses on the correct movie
 TEMPERATURE = 0.05   # small value => sharper softmax over the in-batch candidates
 
 
 # --data
+# reads the data only movies seen in train and users with at least one liked movie get a vector.
 
 def load_data(data_dir: Path, sample_frac: float):
     train = pd.read_parquet(data_dir / "train.parquet", columns=["user_id", "item_id", "label"])
@@ -51,7 +53,7 @@ def load_data(data_dir: Path, sample_frac: float):
     user_ids = np.sort(train.loc[train["label"] == 1, "user_id"].unique())
     return train, val, items, user_ids, item_ids
 
-
+# Convert movie genres into 0s and 1s
 def genre_matrix(items: pd.DataFrame, item_ids: np.ndarray):
     """Multi-hot genre matrix, one row per item (same order as item_ids)."""
     items = items.set_index("item_id").loc[item_ids]
@@ -66,8 +68,8 @@ def genre_matrix(items: pd.DataFrame, item_ids: np.ndarray):
     return mat, vocab
 
 
-# -------------------model
-
+# model
+# Convert user IDs into normalized 64-dimensional vectors
 class UserTower(tf.keras.Model):
     def __init__(self, n_users, dim):
         super().__init__()
@@ -80,7 +82,7 @@ class UserTower(tf.keras.Model):
     def call(self, user_idx):
         return tf.math.l2_normalize(self.mlp(self.emb(user_idx)), axis=-1)
 
-
+# Combine movie ID and genre features to create normalized 64-dimensional vectors
 class ItemTower(tf.keras.Model):
     def __init__(self, n_items, genres, dim):
         super().__init__()
@@ -97,7 +99,7 @@ class ItemTower(tf.keras.Model):
         x = tf.concat([self.id_emb(item_idx), g], axis=-1)
         return tf.math.l2_normalize(self.mlp(x), axis=-1)
 
-
+# Combine both towers, calculate training loss, and apply logQ correction.
 class TwoTower(tfrs.Model):
     def __init__(self, n_users, n_items, genres, item_probs, dim):
         super().__init__()
@@ -120,7 +122,7 @@ class TwoTower(tfrs.Model):
             candidate_ids=features["item"],
         )
 
-
+# saveing the weights after every epoch, so a colab disconnect doesn’t lose the run at all
 class SaveWeightsEachEpoch(tf.keras.callbacks.Callback):
     """Keep a checkpoint after every epoch, so a disconnect doesn't lose the whole run."""
 
@@ -133,7 +135,8 @@ class SaveWeightsEachEpoch(tf.keras.callbacks.Callback):
 
 
 # -------------- evaluation
-
+# for each user, scores all movies, hides the ones already seen, takes the top 100 and calculates Recall@K and NDCG@K
+# It does the same for the “most popular” baseline.
 def evaluate(user_vecs, item_vecs, seen, truth, item_pop, ks=(10, 50, 100), max_k=100, batch=1024):
     """
     seen:  CSR matrix (users x items) of everything the user already interacted with in train
@@ -183,7 +186,15 @@ def evaluate(user_vecs, item_vecs, seen, truth, item_pop, ks=(10, 50, 100), max_
     return res
 
 
-# ----------------------- main
+# ----main
+#  1 Load settings and data
+#  2 Create user-movie training paiirs
+#  3 Calculate movie sampling probabilities
+#  4 Prepare shuffled batches
+#  5 Train the model.
+#  6 Generate and save user and movie vectors.
+#  7 Prepare seen and liked movie data for evaluation
+#  8 Evaluate results and save metrics in metrics.json
 
 def main():
     ap = argparse.ArgumentParser()
