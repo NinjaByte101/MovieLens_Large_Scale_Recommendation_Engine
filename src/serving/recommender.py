@@ -1,20 +1,47 @@
-"""Step 6: the recommender that ties everything together, with cold-start fallbacks and a Redis cache.
+"""
+Step 6: Build the complete recommendation system that connects all the
+components, handles new users, and uses Redis for caching recommendations.
 
-    known user ........ FAISS candidates -> DCN ranker -> top N          (source: "ranker")
-    new user, liked movies given ... average of those movies' vectors -> FAISS   ("taste_vector")
-    new user, genres given ......... most-liked movies inside those genres       ("popular_by_genre")
-    new user, nothing given ........ most-liked movies overall                   ("popular")
+How recommendations work:
 
-Cold-start users have no history, so the ranker (which relies on user stats) is skipped for them.
-The "taste_vector" path is a heuristic: user and movie vectors live in the same space, so the
-mean of a few liked movies is a reasonable stand-in for a user vector. It is not evaluated offline.
+    Known user:
+        FAISS finds candidate movies -> DCN ranker sorts them -> returns top N
+        (source: "ranker")
 
-Results for known users are cached in Redis for `ttl` seconds. The cache is optional and can never
-break a request: if Redis is down, the recommender just computes the answer.
+    New user who provides liked movies:
+        Takes the average of those movies' vectors and uses FAISS to find
+        similar movies.
+        (source: "taste_vector")
 
-Try it:
+    New user who selects genres:
+        Recommends the most popular movies from those genres.
+        (source: "popular_by_genre")
+
+    New user with no preferences:
+        Recommends the most popular movies overall.
+        (source: "popular")
+
+New users don't have any rating history, so the ranker is skipped because
+it depends on user-related statistics.
+
+The "taste_vector" approach is a simple method. Since user and movie vectors
+exist in the same vector space, we take the average of a few liked movie
+vectors and use it as the user's vector to find similar movies.
+
+However, this approach has not been evaluated through offline testing yet.
+
+For known users, recommendations are stored in Redis for the specified
+TTL (Time To Live) period.
+
+Redis is optional. If it is unavailable, the system still works by
+generating recommendations normally without using the cache.
+
+To run the demo:
     python src/serving/recommender.py --demo --artifacts-root . --ranking models/ranking_v3
 """
+
+
+
 import os
 
 # TFRS needs Keras 2. Must be set before tensorflow is imported.
@@ -140,10 +167,10 @@ class Recommender:
         if triton_url:
             try:
                 self.triton = TritonScorer(triton_url)
-            except Exception as exc:            # e.g. tritonclient not installed
+            except Exception as exc:        
                 print(f"Triton client unavailable ({exc}); scoring locally")
 
-    # ------------------------------------------------------------ public API
+    # public API
 
     def recommend(self, user_id, k=10, genres=None, liked_item_ids=None):
         t0 = time.perf_counter()
@@ -166,7 +193,7 @@ class Recommender:
         return {"source": source, "cached": cached, "items": items,
                 "latency_ms": round((time.perf_counter() - t0) * 1000, 2)}
 
-    # ------------------------------------------------------------ recommendation paths
+    # recommendation paths
 
     def _rank_known_user(self, u, k):
         cand_items, cand_scores = retrieve(self.index, self.user_vecs[u:u + 1], [u], self.seen, self.n_candidates)
@@ -207,7 +234,7 @@ class Recommender:
         return [{"item_id": int(self.item_ids[i]), "title": str(self.titles[i])} for i in idx]
 
 
-# ---------------------------------------------------------------- command line / demo
+# command line / demo
 
 def build_from_args(args):
     root = Path(args.artifacts_root)
