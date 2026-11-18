@@ -1,4 +1,5 @@
-"""Step 3: two-tower retrieval model (TensorFlow Recommenders).
+"""
+Step 3 - two-tower retrieval model (TensorFlow Recommenders)
 
 The user tower and the item tower each turn their input into a vector of the
 same size. Training pushes the vector of a user close to the vectors of movies
@@ -8,10 +9,12 @@ Run:
     python src/retrieval/train_two_tower.py --data data/processed --out models/retrieval
 
 Outputs in --out:
-    item_embeddings.npy, user_embeddings.npy   (L2-normalised, ready for FAISS)
-    users.parquet, items.parquet               (id -> row index in the .npy files)
-    metrics.json                               (recall / NDCG vs popularity baseline)
+    item_embeddings.npy, user_embeddings.npy    ( L2-normalised, ready for FAISS )
+    users.parquet, items.parquet               ( id -> row index in the .npy files )
+    metrics.json                               ( recall / NDCG vs popularity baseline )
+    
 """
+
 import os
 
 # TFRS needs Keras 2. Must be set before tensorflow is imported.
@@ -28,10 +31,10 @@ import tensorflow as tf
 import tensorflow_recommenders as tfrs
 
 SEED = 42
-TEMPERATURE = 0.05   # small value = sharper softmax over the in-batch candidates
+TEMPERATURE = 0.05   # small value => sharper softmax over the in-batch candidates
 
 
-# ---------------------------------------------------------------- data
+# --data
 
 def load_data(data_dir: Path, sample_frac: float):
     train = pd.read_parquet(data_dir / "train.parquet", columns=["user_id", "item_id", "label"])
@@ -63,7 +66,7 @@ def genre_matrix(items: pd.DataFrame, item_ids: np.ndarray):
     return mat, vocab
 
 
-# ---------------------------------------------------------------- model
+# -------------------model
 
 class UserTower(tf.keras.Model):
     def __init__(self, n_users, dim):
@@ -106,8 +109,10 @@ class TwoTower(tfrs.Model):
     def compute_loss(self, features, training=False):
         user_vec = self.user_tower(features["user"])
         item_vec = self.item_tower(features["item"])
+        
         # popular movies show up in many batches, so correct for how often
         # each one is sampled (otherwise the model just learns "recommend hits")
+        
         probs = tf.gather(self.item_probs, features["item"])
         return self.task(
             user_vec, item_vec,
@@ -127,7 +132,7 @@ class SaveWeightsEachEpoch(tf.keras.callbacks.Callback):
         self.model.save_weights(str(self.out_dir / f"weights_epoch_{epoch + 1:02d}.weights.h5"))
 
 
-# ---------------------------------------------------------------- evaluation
+# -------------- evaluation
 
 def evaluate(user_vecs, item_vecs, seen, truth, item_pop, ks=(10, 50, 100), max_k=100, batch=1024):
     """
@@ -178,7 +183,7 @@ def evaluate(user_vecs, item_vecs, seen, truth, item_pop, ks=(10, 50, 100), max_
     return res
 
 
-# ---------------------------------------------------------------- main
+# ----------------------- main
 
 def main():
     ap = argparse.ArgumentParser()
