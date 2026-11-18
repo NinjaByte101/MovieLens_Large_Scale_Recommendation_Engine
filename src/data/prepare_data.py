@@ -3,10 +3,10 @@ Step 1 Clean the MovieLens 25M dataset and split it based on time
 instead of randomly dividing the data.
 
 To run:
-    python src/data/prepare_data.py --raw data/raw/ml-25m --out data/processed
+python src/data/prepare_data.py --raw data/raw/ml-25m --out data/processed
 
 For quick testing without downloading the dataset:
-    python src/data/prepare_data.py --synthetic --out data/processed
+python src/data/prepare_data.py --synthetic --out data/processed
 
 Output files (saved in the -out folder):
 
@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 ## A rating of 4 or more is a “like”, users and movies need at least 5 ratings, and the split is 80/10/10.
-POSITIVE_THRESHOLD = 4.0   # rating >= 4 counts as a positive interaction ("click")
+POSITIVE_THRESHOLD = 4.0   # rating >= 4 counts as a positive interaction
 MIN_USER_INTERACTIONS = 5
 MIN_ITEM_INTERACTIONS = 5
 TRAIN_FRAC, VAL_FRAC = 0.8, 0.1  # remaining 0.1 = test
