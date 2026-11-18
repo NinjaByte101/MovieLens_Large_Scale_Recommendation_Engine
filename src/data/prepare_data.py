@@ -28,12 +28,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+## A rating of 4 or more is a “like”, users and movies need at least 5 ratings, and the split is 80/10/10.
 POSITIVE_THRESHOLD = 4.0   # rating >= 4 counts as a positive interaction ("click")
 MIN_USER_INTERACTIONS = 5
 MIN_ITEM_INTERACTIONS = 5
 TRAIN_FRAC, VAL_FRAC = 0.8, 0.1  # remaining 0.1 = test
 
-
+## reads ratings.csv and movies.csv and renames the columns to user_id, item_id and timestamp
 def load_movielens(raw_dir: Path):
     ratings = pd.read_csv(raw_dir / "ratings.csv")
     movies = pd.read_csv(raw_dir / "movies.csv")
@@ -41,7 +42,7 @@ def load_movielens(raw_dir: Path):
     movies = movies.rename(columns={"movieId": "item_id"})
     return ratings, movies
 
-
+## makes fake data for quick tests, so you can run the code without downloading anything
 def make_synthetic(n_users=2000, n_items=500, n_rows=100_000, seed=42):
     rng = np.random.default_rng(seed)
     genres = ["Action", "Comedy", "Drama", "Sci-Fi", "Romance", "Thriller", "Animation"]
@@ -58,11 +59,11 @@ def make_synthetic(n_users=2000, n_items=500, n_rows=100_000, seed=42):
     })
     return ratings, movies
 
-
+## Remove duplicates, null values, invalid movies, and users or movies with fewer than 5 ratings Also, add like labels and sort the data by time.
 def clean(ratings: pd.DataFrame, movies: pd.DataFrame) -> pd.DataFrame:
     ratings = ratings.drop_duplicates(["user_id", "item_id", "ts"]).dropna()
     ratings = ratings[ratings["item_id"].isin(movies["item_id"])]
-    # iterative k-core style filter (2 passes is enough in practice)
+
     for _ in range(2):
         ratings = ratings[ratings.groupby("user_id")["item_id"].transform("size") >= MIN_USER_INTERACTIONS]
         ratings = ratings[ratings.groupby("item_id")["user_id"].transform("size") >= MIN_ITEM_INTERACTIONS]
@@ -70,7 +71,7 @@ def clean(ratings: pd.DataFrame, movies: pd.DataFrame) -> pd.DataFrame:
     ratings["label"] = (ratings["rating"] >= POSITIVE_THRESHOLD).astype("int8")
     return ratings.sort_values("ts").reset_index(drop=True)
 
-
+## Split the data into training, validation, and testing sets based on timestamps (80/10/10).
 def temporal_split(df: pd.DataFrame):
     t_train = df["ts"].quantile(TRAIN_FRAC)
     t_val = df["ts"].quantile(TRAIN_FRAC + VAL_FRAC)
@@ -79,7 +80,7 @@ def temporal_split(df: pd.DataFrame):
     test = df[df["ts"] > t_val]
     return train, val, test, int(t_train), int(t_val)
 
-
+## Run the cleaning and splitting steps, check cold-start users, and save all output files. Also, verify that the data is split correctly without time leakage.
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", type=Path, default=Path("data/raw/ml-25m"))
