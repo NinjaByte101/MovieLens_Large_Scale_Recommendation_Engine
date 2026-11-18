@@ -55,14 +55,15 @@ from pathlib import Path
 
 import faiss
 import numpy as np
+
 import pandas as pd
 import scipy.sparse as sp
-
+# Explains the four recommendation paths ranker, taste_vector, popular_by_genre and popular.
 sys.path.append(str(Path(__file__).resolve().parents[1] / "ranking"))
 from train_candidate_ranker import CandidateRanker, FEATURES, feature_matrix, genre_profiles, retrieve  # noqa: E402
 from train_ranker import genre_table  # noqa: E402
 
-
+# a redis wrapper - The key is rec: v1: {user}: {k} Any error counts as a cache miss, so a Redis failure can’t break a request.
 class RecommendationCache:
     """Thin Redis wrapper. Any Redis error is treated as a cache miss."""
 
@@ -94,7 +95,7 @@ class RecommendationCache:
         except Exception:
             pass
 
-
+# sends the features to a Triton server and returns the scores. If it fails, it raises an error, and the recommender then uses the local ranker.
 class TritonScorer:
     """Scores candidates on a Triton server. The ONNX model takes RAW features (it standardises inside).
 
@@ -115,7 +116,7 @@ class TritonScorer:
         result = self.client.infer(self.model_name, inputs, outputs=[self._http.InferRequestedOutput("score")])
         return result.as_numpy("score")
 
-
+# Load all required models, vectors, movie data, Faiss index, and user features
 class Recommender:
     def __init__(self, data_dir, features_dir, retrieval_dir, faiss_dir, ranking_dir,
                  index_name="hnsw", n_candidates=200, cache=None, triton_url=None):
@@ -171,7 +172,8 @@ class Recommender:
                 print(f"Triton client unavailable ({exc}); scoring locally")
 
     # public API
-
+    # choose the recommendation path based on the uers' history or preferences 
+    # and return results with latency details
     def recommend(self, user_id, k=10, genres=None, liked_item_ids=None):
         t0 = time.perf_counter()
         cached = False
@@ -194,7 +196,7 @@ class Recommender:
                 "latency_ms": round((time.perf_counter() - t0) * 1000, 2)}
 
     # recommendation paths
-
+    # Get 200 candidates, build features, score them, and return the top K movies
     def _rank_known_user(self, u, k):
         cand_items, cand_scores = retrieve(self.index, self.user_vecs[u:u + 1], [u], self.seen, self.n_candidates)
         X, item_rows, _ = feature_matrix(np.array([u]), cand_items, cand_scores, self.user_ids, self.item_ids,
@@ -209,7 +211,8 @@ class Recommender:
             scaled = ((X - self.mean) / self.std).astype("float32")
             prob = self.ranker({"num": scaled, "item": item_rows}, training=False).numpy()
         return cand_items[0][np.argsort(-prob)[:k]]
-
+        
+    # verage liked movie vectors, normalize the result, and find similar movies using FAISS
     def _taste_vector(self, liked_item_ids, k):
         liked = self.item_vocab.get_indexer(liked_item_ids)
         liked = liked[liked >= 0]
@@ -221,7 +224,7 @@ class Recommender:
         already = set(liked.tolist())
         ids = [i for i in ids[0] if i >= 0 and i not in already]
         return np.array(ids[:k]), "taste_vector"
-
+    # Recommend the most popular movies from the selected genres
     def _popular_by_genre(self, genres, k):
         masks = [self.genre_masks[g.lower()] for g in genres if g.lower() in self.genre_masks]
         if not masks:
@@ -229,13 +232,13 @@ class Recommender:
         wanted = np.logical_or.reduce(masks)
         in_genre = self.popular_order[wanted[self.popular_order]]
         return in_genre[:k], "popular_by_genre"
-
+    # Convert movie row numbers into movie IDs and titles
     def _format(self, idx):
         return [{"item_id": int(self.item_ids[i]), "title": str(self.titles[i])} for i in idx]
 
 
 # command line / demo
-
+# set up Redis and the recommender, then handle command-line execution and the demo.
 def build_from_args(args):
     root = Path(args.artifacts_root)
     cache = RecommendationCache()
