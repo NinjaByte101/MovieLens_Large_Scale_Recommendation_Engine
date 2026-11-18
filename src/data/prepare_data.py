@@ -1,14 +1,26 @@
-"""Step 1: clean MovieLens 25M and split by TIME (not randomly).
-
-Usage:
-    python src/data/prepare_data.py --raw data/raw/ml-25m --out data/processed
-    python src/data/prepare_data.py --synthetic --out data/processed   # quick test, no download
-
-Outputs (parquet) in --out:
-    train.parquet, val.parquet, test.parquet  -> user_id, item_id, rating, label, ts
-    items.parquet                              -> item_id, title, genres
-    split_info.json                            -> cutoffs and cold-start stats
 """
+Step 1 Clean the MovieLens 25M dataset and split it based on time
+instead of randomly dividing the data.
+
+To run:
+    python src/data/prepare_data.py --raw data/raw/ml-25m --out data/processed
+
+For quick testing without downloading the dataset:
+    python src/data/prepare_data.py --synthetic --out data/processed
+
+Output files (saved in the -out folder):
+
+train.parquet, val.parquet, test.parquet
+-> Store user_id, item_id, rating, label, and timestamp (ts).
+
+items.parquet
+-> Stores movie IDs, titles, and genres.
+
+split_info.json
+-> Stores the time-based split details and cold-start statistics.
+
+"""
+
 import argparse
 import json
 from pathlib import Path
@@ -100,7 +112,7 @@ def main():
     movies[movies.item_id.isin(df.item_id.unique())].to_parquet(args.out / "items.parquet", index=False)
     (args.out / "split_info.json").write_text(json.dumps(info, indent=2))
 
-    # sanity: no time leakage
+    # sanity no time leakage
     assert train.ts.max() <= val.ts.min() <= val.ts.max() <= test.ts.min() or len(val) == 0
     print(json.dumps(info, indent=2))
     print(f"saved to {args.out}")
