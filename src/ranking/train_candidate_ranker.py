@@ -1,25 +1,37 @@
-"""Step 5 (v3): train the ranker on the candidates retrieval actually produces.
+"""
+Step 5 (v3): Train the ranking model using the actual candidates generated
+by the retrieval system.
 
-The v1/v2 ranker learned "given that this user rated this movie, did they like
-it?". But at serving time it re-orders movies the user has NOT rated, and the
-question there is "will they watch it and like it?". Those are different
-questions, so a good AUC did not turn into a better ranking.
+In v1 and v2, the ranker learned whether a user liked a movie they had
+already rated. However, during actual recommendations, the system ranks
+movies that the user has not watched or rated yet.
 
-Here the training rows look exactly like serving:
-    for each user with activity in the validation period
-        1. take the FAISS candidates (movies not yet seen in train)
-        2. features = retrieval score, rank, user stats, movie stats, genre affinity
-        3. label    = 1 if the user liked that movie in the validation period
+These are two different tasks. That's why a good AUC score did not
+necessarily result in better recommendations.
 
-The retrieval embeddings were trained on the train period only, so the
-retrieval score is a legitimate feature here (it never saw these labels).
-Users are split into folds, and each user is scored by a model that never
-trained on that user, so the comparison with retrieval order is fair.
+In v3, we train the ranker using data that matches the actual recommendation
+process:
 
-Run:
+    For each user who was active during the validation period:
+
+    1. Get candidate movies from FAISS that the user has not seen during the training period.
+
+    2. Create features using retrieval score, movie rank, user statistics, movie statistics, and genre preferences.
+
+   3. Assign a label of 1 if the user liked that movie during the validation period.
+
+The retrieval model was trained only on the training data, so it has not
+seen the validation labels. This makes the retrieval score a valid feature.
+
+We also divide users into different folds. Each user is evaluated by a
+model that was not trained on that user's data. This helps make the
+comparison with the original retrieval ranking fair.
+
+To run:
     python src/ranking/train_candidate_ranker.py --data data/processed --features data/features \
         --retrieval models/retrieval --faiss models/faiss --out models/ranking_v3
 """
+
 import os
 
 # TFRS needs Keras 2. Must be set before tensorflow is imported.
@@ -42,7 +54,7 @@ FEATURES = ["retrieval_score", "log_rank", "user_n", "user_avg_rating", "user_po
             "item_log_pop", "item_avg_rating", "item_pos_rate", "genre_affinity"]
 
 
-# ---------------------------------------------------------------- candidates
+# candidates
 
 def retrieve(index, user_vecs, users, seen, n_keep, fetch=1000):
     """FAISS top candidates per user, dropping movies the user already interacted with."""
@@ -95,7 +107,7 @@ def build_rows(users, cand_items, cand_scores, truth, *feature_args):
     return X, i_rows, y, lens
 
 
-# ---------------------------------------------------------------- model
+# model
 
 class CandidateRanker(tf.keras.Model):
     """DCN over the numeric features plus the movie's genres (no ID embeddings)."""
@@ -132,7 +144,7 @@ def predict(model, X, items):
     return model.predict({"num": X, "item": items}, batch_size=65536, verbose=0)
 
 
-# ---------------------------------------------------------------- main
+# main
 
 def main():
     ap = argparse.ArgumentParser()
